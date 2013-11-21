@@ -162,7 +162,7 @@ end
 task :port, :serialport do |_, args|
   abort(serialport) if args.serialport.nil?
 
-  @recorder.port = args.serialport
+  @recorder.port = "/dev/#{args.serialport}"
 end
 
 desc 'Perform recording'
