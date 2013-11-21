@@ -1,0 +1,199 @@
+require 'serialport'
+require 'colorize'
+
+require 'yaml'
+require 'json'
+require 'highline'
+
+class Integer
+  def ordinalize
+    if (11..13).include?(to_i.abs % 100)
+      "#{self}th"
+    else
+      case to_i.abs % 10
+        when 1;
+          "#{self}st"
+        when 2;
+          "#{self}nd"
+        when 3;
+          "#{self}rd"
+        else
+          "#{self}th"
+      end
+    end
+  end
+end
+
+class Hash
+  def symbolize_keys!
+    keys.each do |key|
+      self[(key.to_sym rescue key) || key] = delete(key)
+    end
+    self
+  end
+end
+
+module IrSequence
+  def display_text
+    "#{type.light_yellow}:#{value.light_green}(#{size.light_blue})"
+  end
+
+  def type
+    self[:type]
+  end
+
+  def value
+    self[:value]
+  end
+
+  def size
+    self[:size]
+  end
+end
+
+
+class Sensor < SerialPort
+  def read_sequence
+    puts "IR+Sequence=?"
+    data = gets
+    JSON.parse(data).symbolize_keys!.extend(IrSequence)
+  end
+
+  def wait_for_ready
+    puts "IR+Ready?"
+    date = gets
+
+    raise 'Sensor Error' unless data == 'IR+Ready=1'
+  end
+end
+
+class Recorder
+  attr_accessor :port
+  attr_reader :records
+
+  def initialize
+    @commands = {}
+    @records = {}
+  end
+
+  def commands(keys)
+    case keys
+      when Hash
+        @commands.update keys.symbolize_keys!
+      when Array
+        @commands.update Hash[keys.map { |k| [k, nil] }].symbolize_keys!
+      else
+        raise ''
+    end
+  end
+
+  def record
+    begin
+      sensor = Sensor.new @port
+    rescue error
+      raise "Failed to open port #{port}.\n#{error}"
+    end
+
+    begin
+      sensor.wait_for_ready
+    rescue error
+      raise error
+    end
+
+    @commands.each do |key, description|
+      if description.nil?
+        puts "Record #{key}:".light_white
+      else
+        puts "Record #{key}(#{description}):".light_white
+      end
+
+      record_sequence(sensor, key)
+    end
+  end
+
+  def record_sequence(sensor, key)
+    try = 1
+
+    begin
+      puts "#{try.ordinalize} Time:".light_white
+      seq = sensor.read_sequence
+
+      puts seq.display_text
+
+      @records[key] ||= seq
+
+      if @record[key] == seq
+        try += 1
+      else
+        try = 1
+        print 'Sequence Mismatch. '.light_red, "Retry!\n\n".light_white
+      end
+
+    end until (try > 3)
+  end
+end
+
+@recorder = Recorder.new
+
+task :commands, :input_file do |_, args|
+  Rake::Task['input:yaml'].execute args.input_file
+end
+
+namespace :commands do
+  desc 'Read command list to be recorded from YAML file'
+  task :yaml, :input_file do |_, args|
+    abort('Input file is not provided') if args.input_file.nil?
+
+    keys = YAML.load_file args.input_file
+
+    begin
+      @recorder.commands keys
+    rescue error
+      abort(error)
+    end
+  end
+
+  #desc 'Read command list from keyboard'
+  task :keyboard do
+    #TODO Implement this
+  end
+end
+
+task :port, :serialport do |_, args|
+  abort(serialport) if args.serialport.nil?
+
+  @recorder.port = args.serialport
+end
+
+desc 'Perform recording'
+task :record do
+  begin
+    @recorder.record
+  rescue error
+    abort(error)
+  end
+end
+
+task :output, :output_file do |_, args|
+  Rake::Task['output:yaml'].execute args.output_file
+end
+
+namespace :output do
+  desc 'Write recorded sequences to YAML file'
+  task :yaml, :output_file => :execute do |_, args|
+    abort('Output file is not provided') if args.output_file.nil?
+
+    File.open args.output_file, 'w' do |f|
+      f.write @recorder.records.to_yaml
+    end
+  end
+
+  desc 'Write recorded sequences to JSON file'
+  task :json, :outupt_file => :execute do |_, args|
+    abort('Output file is not provided') if args.output_file.nil?
+
+    File.open args.output_file, 'w' do |f|
+      f.write @recorder.records.to_json
+    end
+  end
+end

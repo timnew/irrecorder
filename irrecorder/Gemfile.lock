@@ -1,10 +1,14 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    colorize (0.6.0)
+    highline (1.6.20)
     serialport (1.2.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  colorize
+  highline
   serialport
