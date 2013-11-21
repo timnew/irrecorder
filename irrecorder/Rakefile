@@ -54,16 +54,16 @@ end
 
 class Sensor < SerialPort
   def read_sequence
-    puts "IR+Sequence=?"
+    puts "Sequence?"
     data = gets
     JSON.parse(data).symbolize_keys!.extend(IrSequence)
   end
 
   def wait_for_ready
-    puts "IR+Ready?"
+    puts "Ready?"
     date = gets
 
-    raise 'Sensor Error' unless data == 'IR+Ready=1'
+    raise 'Sensor Error' unless data == 'SENSOR:OK'
   end
 end
 
