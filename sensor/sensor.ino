@@ -66,7 +66,9 @@ void dump(decode_results *results) {
 
 void loop() {	
 	if(Serial.available()) {
-		String command = String(readStringUntil('?'));
+		String command = String(readStringUntil('\n'));
+		
+		command.trim();
 		
 		#ifdef DEBUG
 		Serial.println(command);
