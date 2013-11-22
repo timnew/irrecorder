@@ -5,138 +5,12 @@ require 'yaml'
 require 'json'
 require 'highline'
 
-class Integer
-  def ordinalize
-    if (11..13).include?(to_i.abs % 100)
-      "#{self}th"
-    else
-      case to_i.abs % 10
-        when 1;
-          "#{self}st"
-        when 2;
-          "#{self}nd"
-        when 3;
-          "#{self}rd"
-        else
-          "#{self}th"
-      end
-    end
-  end
-end
-
-class Hash
-  def symbolize_keys!
-    keys.each do |key|
-      self[(key.to_sym rescue key) || key] = delete(key)
-    end
-    self
-  end
-end
-
-module IrSequence
-  def display_text
-    "#{type.light_yellow}:#{value.light_green}(#{size.light_blue})"
-  end
-
-  def type
-    self[:type]
-  end
-
-  def value
-    self[:value]
-  end
-
-  def size
-    self[:size]
-  end
-end
-
-
-class Sensor < SerialPort
-  def read_sequence
-    puts "Sequence?"
-    data = gets
-    JSON.parse(data).symbolize_keys!.extend(IrSequence)
-  end
-
-  def wait_for_ready
-    puts "Ready?"
-    date = gets
-
-    raise 'Sensor Error' unless data == 'SENSOR:OK'
-  end
-end
-
-class Recorder
-  attr_accessor :port
-  attr_reader :records
-
-  def initialize
-    @commands = {}
-    @records = {}
-  end
-
-  def commands(keys)
-    case keys
-      when Hash
-        @commands.update keys.symbolize_keys!
-      when Array
-        @commands.update Hash[keys.map { |k| [k, nil] }].symbolize_keys!
-      else
-        raise ''
-    end
-  end
-
-  def record
-    begin
-      sensor = Sensor.new @port
-    rescue error
-      raise "Failed to open port #{port}.\n#{error}"
-    end
-
-    begin
-      sensor.wait_for_ready
-    rescue error
-      raise error
-    end
-
-    @commands.each do |key, description|
-      if description.nil?
-        puts "Record #{key}:".light_white
-      else
-        puts "Record #{key}(#{description}):".light_white
-      end
-
-      record_sequence(sensor, key)
-    end
-  end
-
-  def record_sequence(sensor, key)
-    try = 1
-
-    begin
-      puts "#{try.ordinalize} Time:".light_white
-      seq = sensor.read_sequence
-
-      puts seq.display_text
-
-      @records[key] ||= seq
-
-      if @record[key] == seq
-        try += 1
-      else
-        try = 1
-        print 'Sequence Mismatch. '.light_red, "Retry!\n\n".light_white
-      end
-
-    end until (try > 3)
-  end
-end
+require './lib/irrecorder'
 
 @recorder = Recorder.new
 
 task :commands, :input_file do |_, args|
-  Rake::Task['input:yaml'].execute args.input_file
+  Rake::Task['commands:yaml'].execute args
 end
 
 namespace :commands do
@@ -159,14 +33,34 @@ namespace :commands do
   end
 end
 
-task :port, :serialport do |_, args|
-  abort(serialport) if args.serialport.nil?
+task :port do
+  Rake::Task['port:auto'].execute
+end
 
-  @recorder.port = "/dev/#{args.serialport}"
+namespace :port do
+  desc 'Auto detect sensor port'
+  task :auto do
+    if @recorder.port.nil?
+      port = Dir['/dev/*.usb*'].first
+
+      abort('No sensor is detected') if port.nil?
+
+      puts "Sensor detected at #{port.light_yellow}".light_white
+
+      @recorder.port = port
+    end
+  end
+
+  desc 'Select sensor port'
+  task :select, :serialport do |_, args|
+    abort(serialport) if args.serialport.nil?
+
+    @recorder.port = "/dev/#{args.serialport}"
+  end
 end
 
 desc 'Perform recording'
-task :record do
+task :record => :port do
   begin
     @recorder.record
   rescue error
@@ -174,13 +68,13 @@ task :record do
   end
 end
 
-task :output, :output_file do |_, args|
-  Rake::Task['output:yaml'].execute args.output_file
+task :output, [:output_file] => :record do |_, args|
+  Rake::Task['output:yaml'].execute args
 end
 
 namespace :output do
   desc 'Write recorded sequences to YAML file'
-  task :yaml, :output_file => :execute do |_, args|
+  task :yaml, [:output_file] => :record do |_, args|
     abort('Output file is not provided') if args.output_file.nil?
 
     File.open args.output_file, 'w' do |f|
@@ -189,7 +83,7 @@ namespace :output do
   end
 
   desc 'Write recorded sequences to JSON file'
-  task :json, :outupt_file => :execute do |_, args|
+  task :json, [:outupt_file] => :record do |_, args|
     abort('Output file is not provided') if args.output_file.nil?
 
     File.open args.output_file, 'w' do |f|

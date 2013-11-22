@@ -1,9 +1,17 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    coderay (1.1.0)
     colorize (0.6.0)
     highline (1.6.20)
+    method_source (0.8.2)
+    pry (0.9.12.3)
+      coderay (~> 1.0)
+      method_source (~> 0.8)
+      slop (~> 3.4)
+    rake (10.1.0)
     serialport (1.2.3)
+    slop (3.4.7)
 
 PLATFORMS
   ruby
@@ -11,4 +19,6 @@ PLATFORMS
 DEPENDENCIES
   colorize
   highline
+  pry
+  rake
   serialport
