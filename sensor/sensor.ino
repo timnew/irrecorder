@@ -64,21 +64,31 @@ void dump(decode_results *results) {
 }
 
 
-void loop() {
+void loop() {	
 	if(Serial.available()) {
 		String command = String(readStringUntil('?'));
-		skipUntil('\n');        
+		
+		#ifdef DEBUG
+		Serial.println(command);
+		#endif		
+
 		if(command == "Sequence?") {
+			Serial.println("Sequence");
 			irrecv.resume();
 			read = true;
 		}
-		else if(command == "Ready?") {       
+		else if(command == "Ready?") {       			
 			Serial.println("SENSOR:OK");
 		} else {        
 			Serial.print("SENSOR:Unknown Command:");
 			Serial.println(command);
 		}
 	}
+	
+	#ifdef DEBUG
+	if(read)
+		Serial.println("reading");
+	#endif DEBUG
 
 	if (read && irrecv.decode(&results)) {    
 		dump(&results);

@@ -11,7 +11,17 @@ byte readByte() {
 }
 
 byte skipUntil(char terminator) {
-	size = Serial.readBytesUntil(terminator, buffer, BUFFER_SIZE);
+	for(size = 0; size < BUFFER_SIZE; size++)
+	buffer[size] = 0;
+
+	for(size = 0; size < BUFFER_SIZE; size++) {
+		buffer[size] = (char)readByte();
+				
+		if(buffer[size] == terminator) {
+			size++;
+			break;
+		}		
+	}
 
 	return size;
 }
