@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "IRremote.h" // Library avaiable at http://arcfn.com/2009/08/multi-protocol-infrared-remote-library.html
+#include "IRremote.h" // Library available at https://github.com/shirriff/Arduino-IRremote
 #include "SerialHelper.h"
 #include "JsonWriter.h"
 

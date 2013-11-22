@@ -6,7 +6,7 @@ A tool helps you to batch record infrared sequence into files.
 ## Steps to setup
 
 ### Arduino Sensor
-1. Download and install arduino IRemote library if you havn't. The library can be found at [http://arcfn.com/2009/08/multi-protocol-infrared-remote-library.html](http://arcfn.com/2009/08/multi-protocol-infrared-remote-library.html)
+1. Download and install arduino IRemote library if you havn't. The library can be downloaded at [https://github.com/shirriff/Arduino-IRremote](https://github.com/shirriff/Arduino-IRremote)
 2. Connect a IR reciver LED to PIN 11
 3. Connect the arudino to computer via USB
 4. Burn the `sensor` onto an Arduino device. 
