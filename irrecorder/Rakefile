@@ -61,11 +61,11 @@ end
 
 desc 'Perform recording'
 task :record => :port do
-  begin
+  #begin
     @recorder.record
-  rescue error
-    abort(error)
-  end
+  #rescue
+  #  abort('Recoding failed')
+  #end
 end
 
 task :output, [:output_file] => :record do |_, args|

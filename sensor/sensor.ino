@@ -20,6 +20,7 @@ void setup()
 
 void dump(decode_results *results) {
 	int count = results->rawlen;
+	// Serial.print("SENSOR:");
 	json.beginObject().memberName("type");
 	
 	switch(results->decode_type) {
@@ -61,6 +62,8 @@ void dump(decode_results *results) {
 		.memberName("size")
 		.number(results->bits)
 		.endObject();
+
+	Serial.println();
 }
 
 
@@ -69,15 +72,15 @@ void loop() {
 		String command = String(readStringUntil('\n'));
 		
 		command.trim();
-		
+
 		#ifdef DEBUG
 		Serial.println(command);
 		#endif		
 
 		if(command == "Sequence?") {
-			Serial.println("Sequence");
 			irrecv.resume();
 			read = true;
+			// Serial.println("SENSOR:Reading");
 		}
 		else if(command == "Ready?") {       			
 			Serial.println("SENSOR:OK");

@@ -1,8 +1,9 @@
 require_relative './sensor'
 
 class Recorder
-  attr_accessor :port
+  attr_reader :port
   attr_reader :records
+  attr_reader :sensor
 
   def initialize
     @commands = {}
@@ -20,38 +21,33 @@ class Recorder
     end
   end
 
-  def record
-    begin
-      sensor = Sensor.new @port, baud_rate: 9600, data_bits: 8, stop_bits: 1, parity: SerialPort::NONE
-    rescue error
-      raise "Failed to open port #{port}.\n#{error}"
-    end
-
-    begin
-      #puts 'Connecting sensor...'.light_white
-      sensor.wait_for_ready
-      puts 'Sensor is ready'.light_green
-    rescue error
-      raise error
-    end
-
-    @commands.each do |key, description|
-      if description.nil?
-        puts "Record #{key}:".light_white
-      else
-        puts "Record #{key}(#{description}):".light_white
-      end
-
-      record_sequence(sensor, key)
-    end
+  def port=(port)
+    @port = port
+    @sensor = Sensor.new @port
   end
 
-  def record_sequence(sensor, key)
+  def record
+    puts 'Connecting sensor...'.light_white
+    @sensor.wait_for_ready
+    puts 'Sensor is ready'.light_green
+
+    #@commands.each do |key, description|
+    #  if description.nil?
+    #    puts "Record #{key}:".light_white
+    #  else
+    #    puts "Record #{key}(#{description}):".light_white
+    #  end
+    #
+    #  record_sequence(key)
+    #end
+  end
+
+  def record_sequence(key)
     try = 1
 
     begin
-      puts "#{try.ordinalize} Time:".light_white
-      seq = sensor.read_sequence
+      puts "Button [#{key}] #{try.ordinalize} Time:".light_white
+      seq = @sensor.read_sequence
 
       puts seq.display_text
 
