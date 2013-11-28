@@ -36,45 +36,112 @@ command :record do |c|
     when :args
       recorder.commands args
     when :yaml
-      recorder.commands YAML.load_file args[0]
+      safe_load_file do |input_file|
+        recorder.commands YAML.load_file input_file
+      end
     when :json
-      json_file = File.open args[0], 'r'
-      recorder.commands JSON.parse(json_file)
+      safe_load_file do |input_file|
+        recorder.commands JSON.parse File.open(input_file, 'r')
+      end
     when :csv
-      data = File.read args[0]
-      recorder.commands data.split(',').map{|s| s.strip!}
+      safe_load_file do |input_file|
+        recorder.commands File.read(input_file).split(',').map{|s| s.strip!}
+      end
     when :stdin
-      data = ask("Commands", Array)
-      recorder.commands data
+      safe_input do
+        data = ask("Commands", Array)
+        recorder.commands data
+      end
     else      
       abort 'Invalid input format'.light_red
     end
 
     case options.port.downcase.to_sym
     when :auto
-      port = Dir['/dev/*.usb*'].first
-
-      abort('No sensor is detected'.light_red) if port.nil?
+      port = detect_port
 
       puts "Sensor detected at #{port.light_yellow}".light_white
 
       recorder.port = port
     else
-      recorder.port = options.port 
-      #TODO Verify port existence 
+      ensure_port(options.port) do |port|
+        recorder.port = port
+      end
     end
 
-    recorder.record
+    begin
+      recorder.record
+    rescue
+      abort 'Error occurs during recording'.light_red
+    end
 
-    case options.output_format.downcase.to_sym
-    when :yaml
-      puts recorder.records.to_yaml      
-    when :json
-      puts recorder.records.to_json
-    when :csv
-      #TODO implement this 
-    else
-      abort 'Invalid output format'.light_red   
-    end    
+    puts "Recoding completed\n".light_green
+
+    puts "Generating output...".light_white
+
+    generate_output = proc do |stream|
+      case options.output_format.downcase.to_sym
+      when :yaml
+        stream.puts recorder.records.to_yaml      
+      when :json
+        stream.puts recorder.records.to_json
+      when :csv
+        csv = CSV.new stream, headers: %w[command type value size]
+      
+        recorder.records.each do |k, record|
+          csv << [k, record.type, record.value, record.size]
+        end    
+      else
+        abort 'Invalid output format'.light_red   
+      end    
+    end
+
+    case options.output.downcase.to_sym
+    when :stdout
+      safe_generation $stdout, &generate_output      
+    else      
+      File.open options.output, 'w' do |file|
+        safe_generation file, &generate_output
+      end
+    end
   end
 end
+
+module Helper
+  def safe_load_file(file)    
+    abort "File #{file} doesn't exists".light_red unless File.exists?(file)
+
+    yield file
+  rescue
+    abort "Error occurs while loading #{file}".light_red
+  end
+
+  def safe_input
+    yield
+  rescue
+    puts "Input error\n".light_red
+    retry
+  end
+
+  def detect_port(pattern = '/dev/*.usb*')
+    port = Dir[pattern].first
+
+    abort('No sensor is detected'.light_red) if port.nil?
+
+    port
+  end
+
+  def ensure_port(port)
+    abort "Port #{port} doesn't exists".light_red unless File.exists?(port)
+
+    yield port
+  end
+
+  def safe_generation(io)
+    yield io
+  rescue    
+    abort "Error occurs during generation".light_red
+  end
+end
+
+extend Helper
