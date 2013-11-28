@@ -3,6 +3,8 @@ GEM
   specs:
     coderay (1.1.0)
     colorize (0.6.0)
+    commander (4.1.5)
+      highline (~> 1.6.11)
     highline (1.6.20)
     method_source (0.8.2)
     pry (0.9.12.3)
@@ -18,7 +20,7 @@ PLATFORMS
 
 DEPENDENCIES
   colorize
-  highline
+  commander
   pry
   rake
   serialport

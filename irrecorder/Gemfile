@@ -3,7 +3,7 @@ source "https://rubygems.org"
 gem 'rake'
 gem 'colorize'
 gem 'serialport'
-gem 'highline'
+gem 'commander'
 
 group :development do
   gem 'pry'
