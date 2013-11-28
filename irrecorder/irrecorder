@@ -1,0 +1,80 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'commander/import'
+require 'yaml'
+require 'json'
+require 'csv'
+require 'pry'
+require 'serialport'
+require 'colorize'
+require_relative 'lib/irrecorder'
+
+program :version, '0.0.1'
+program :description, 'Infrared sequence recorder'
+
+default_command :record
+
+command :record do |c|
+  c.syntax = "irrecorder keys [options]"
+  c.summary = 'Config keys to be recorded'
+  c.description = <<-END
+      Config keys to be recorded
+      The keys could be enter follow command or load from files or standard input
+  END
+  c.example 'Load from YAML', "irrecorder"
+  c.option '--input_format', 'Input format, could be YAML, JSON, CSV, STDIN, ARGS'
+  c.option '--port', 'Port of the sensor'
+  c.option '--output_format', 'Output format, could be YAML, JSON, CSV'
+  c.option '--output', 'Output file'
+  c.action do |args, options|
+    options.default input_format: :args, port: :auto, output_format: :yaml, output: :stdout
+
+    recorder = Recorder.new
+    
+    case options.input_format.downcase.to_sym
+    when :args
+      recorder.commands args
+    when :yaml
+      recorder.commands YAML.load_file args[0]
+    when :json
+      json_file = File.open args[0], 'r'
+      recorder.commands JSON.parse(json_file)
+    when :csv
+      data = File.read args[0]
+      recorder.commands data.split(',').map{|s| s.strip!}
+    when :stdin
+      data = ask("Commands", Array)
+      recorder.commands data
+    else      
+      abort 'Invalid input format'.light_red
+    end
+
+    case options.port.downcase.to_sym
+    when :auto
+      port = Dir['/dev/*.usb*'].first
+
+      abort('No sensor is detected'.light_red) if port.nil?
+
+      puts "Sensor detected at #{port.light_yellow}".light_white
+
+      recorder.port = port
+    else
+      recorder.port = options.port 
+      #TODO Verify port existence 
+    end
+
+    recorder.record
+
+    case options.output_format.downcase.to_sym
+    when :yaml
+      puts recorder.records.to_yaml      
+    when :json
+      puts.recorder.records.to_json
+    when :csv
+      #TODO implement this 
+    else
+      abort 'Invalid output format'.light_red   
+    end    
+  end
+end
