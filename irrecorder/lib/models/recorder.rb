@@ -31,33 +31,35 @@ class Recorder
     @sensor.wait_for_ready
     puts 'Sensor is ready'.light_green
 
-    #@commands.each do |key, description|
-    #  if description.nil?
-    #    puts "Record #{key}:".light_white
-    #  else
-    #    puts "Record #{key}(#{description}):".light_white
-    #  end
-    #
-    #  record_sequence(key)
-    #end
+    @commands.each do |key, description|
+     if description.nil?
+       puts "Record #{key.to_s.light_cyan}:".light_white
+     else
+       puts "Record #{key.to_s.light_cyan}(#{description.light_blue}):".light_white
+     end
+    
+     record_sequence(key)
+     puts
+    end
   end
 
   def record_sequence(key)
     try = 1
 
     begin
-      puts "Button [#{key}] #{try.ordinalize} Time:".light_white
+      puts "[#{key.to_s.light_cyan}] #{try.ordinalize.light_blue} #{'Time'.light_white}:"
       seq = @sensor.read_sequence
 
       puts seq.display_text
 
       @records[key] ||= seq
 
-      if @record[key] == seq
+      if @records[key] == seq
         try += 1
       else
         try = 1
-        print 'Sequence Mismatch. '.light_red, "Retry!\n\n".light_white
+        @records[key] = nil
+        print 'Sequence Mismatch. '.light_red, "Retry!\n\n".light_yellow
       end
 
     end until (try > 3)

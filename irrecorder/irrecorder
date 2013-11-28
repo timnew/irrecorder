@@ -22,11 +22,11 @@ command :record do |c|
       Config keys to be recorded
       The keys could be enter follow command or load from files or standard input
   END
-  c.example 'Load from YAML', "irrecorder"
-  c.option '--input_format', 'Input format, could be YAML, JSON, CSV, STDIN, ARGS'
-  c.option '--port', 'Port of the sensor'
-  c.option '--output_format', 'Output format, could be YAML, JSON, CSV'
-  c.option '--output', 'Output file'
+  # c.example 'Load from YAML', "irrecorder"
+  c.option '-i', '--input_format <format>', String, 'Input format, could be YAML, JSON, CSV, STDIN, ARGS'
+  c.option '-p', '--port <port file>', String, 'Port of the sensor'
+  c.option '-o', '--output_format <format>', String, 'Output format, could be YAML, JSON, CSV'
+  c.option '-O', '--output <output file>', String, 'Output file, could be STDOUT'
   c.action do |args, options|
     options.default input_format: :args, port: :auto, output_format: :yaml, output: :stdout
 
@@ -70,7 +70,7 @@ command :record do |c|
     when :yaml
       puts recorder.records.to_yaml      
     when :json
-      puts.recorder.records.to_json
+      puts recorder.records.to_json
     when :csv
       #TODO implement this 
     else
