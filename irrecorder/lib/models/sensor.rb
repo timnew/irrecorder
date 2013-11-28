@@ -4,10 +4,21 @@ class Sensor
   attr_accessor :lines, :sp
 
   def initialize(port)
-    @sp = SerialPort.new(port, baud_rate: 9600, data_bits: 8, stop_bits: 1, parity: SerialPort::NONE)
+    @sp = SerialPort.new(port, baud_rate: 9600, data_bits: 8, stop_bits: 1, parity: SerialPort::NONE)    
     @sp.sync = true
+    
     @send_buffer = Queue.new
     @recv_buffer = Queue.new
+
+    sleep 1 
+
+    Thread.new do
+      loop do
+        response = @sp.gets.strip
+        puts "Response recieved: #{response.light_blue}".light_yellow
+        @recv_buffer.enq response
+      end
+    end.run
 
     Thread.new do
       loop do
@@ -17,13 +28,7 @@ class Sensor
       end
     end.run
 
-    Thread.new do
-      loop do
-        response = @sp.gets.strip
-        puts "Response recieved: #{response.light_blue}".light_yellow
-        @recv_buffer.enq response
-      end
-    end.run
+    sleep 0.1
   end
 
   def read_data
