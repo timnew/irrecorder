@@ -36,15 +36,15 @@ command :record do |c|
     when :args
       recorder.commands args
     when :yaml
-      safe_load_file do |input_file|
+      safe_load_file args.first do |input_file|
         recorder.commands YAML.load_file input_file
       end
     when :json
-      safe_load_file do |input_file|
+      safe_load_file args.first do |input_file|
         recorder.commands JSON.parse File.open(input_file, 'r')
       end
     when :csv
-      safe_load_file do |input_file|
+      safe_load_file args.first do |input_file|
         recorder.commands File.read(input_file).split(',').map{|s| s.strip!}
       end
     when :stdin
