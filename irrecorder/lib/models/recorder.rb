@@ -26,7 +26,7 @@ class Recorder
     @sensor = Sensor.new @port
   end
 
-  def record
+  def record    
     puts 'Connecting sensor...'.light_white
     @sensor.wait_for_ready
     puts 'Sensor is ready'.light_green
