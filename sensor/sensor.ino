@@ -3,7 +3,8 @@
 #include "SerialHelper.h"
 #include "JsonWriter.h"
 
-#define SENSOR_PIN 11
+#define SENSOR_PIN 4
+// IR_PIN 3
 
 IRrecv irrecv(SENSOR_PIN);
 decode_results results;
