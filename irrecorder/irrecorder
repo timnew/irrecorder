@@ -86,10 +86,10 @@ command :record do |c|
       when :json
         stream.puts recorder.records.to_json
       when :csv
-        csv = CSV.new stream, headers: %w[command type value size]
+        csv = CSV.new stream, headers: %w[command type code length]
       
         recorder.records.each do |k, record|
-          csv << [k, record.type, record.value, record.size]
+          csv << [k, record.type, record.code, record.length]
         end    
       else
         abort 'Invalid output format'.light_red   

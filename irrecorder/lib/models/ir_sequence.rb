@@ -9,8 +9,8 @@ module IrSequence
 
   def display_text
     type_text = type.to_s.light_yellow
-    value_text = "0x#{value.to_s(16).upcase}".light_green
-    size_text = size.to_s.light_blue
+    value_text = "0x#{code.to_s(16).upcase}".light_green
+    size_text = length.to_s.light_blue
     "#{type_text}:#{value_text}(#{size_text})"
   end
 
@@ -18,11 +18,11 @@ module IrSequence
     self[:type]
   end
 
-  def value
-    self[:value]
+  def code
+    self[:code]
   end
 
-  def size
-    self[:size]
+  def length
+    self[:length]
   end
 end

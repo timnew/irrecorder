@@ -53,16 +53,20 @@ void dump(decode_results *results) {
 		json
 			.memberName("address")
 			.number(results->panasonicAddress)
-			.separator();		
+			.separator()
+			.memberName("code")
+			.number(results->value);		
 	}
-	
-	json
-		.memberName("value")
-		.number(results->value)
-		.separator()
-		.memberName("size")
-		.number(results->bits)
-		.endObject();
+	else {
+		json
+			.memberName("code")
+			.number(results->value)
+			.separator()
+			.memberName("length")
+			.number(results->bits);
+	}
+
+	json.endObject();
 
 	Serial.println();
 }
