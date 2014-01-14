@@ -13,27 +13,27 @@ require_relative 'lib/irrecorder'
 program :version, '0.0.1'
 program :description, 'Infrared sequence recorder'
 
-default_command :record
+default_command :help
 
 command :record do |c|
-  c.syntax = "irrecorder keys [options]"
+  c.syntax = "irrecorder record [options] [input_file | command list (when input_format set to ARGS) ]"
   c.summary = 'Config keys to be recorded'
   c.description = <<-END
       Config keys to be recorded
       The keys could be enter follow command or load from files or standard input
   END
   # c.example 'Load from YAML', "irrecorder"
-  c.option '-i', '--input_format <format>', String, 'Input format, could be YAML, JSON, CSV, STDIN, ARGS'
+  c.option '-i', '--input_format <format>', String, 'Input format, could be YAML, JSON, CSV, STDIN, ARGS(Default)'
   c.option '-p', '--port <port file>', String, 'Port of the sensor'
-  c.option '-o', '--output_format <format>', String, 'Output format, could be YAML, JSON, CSV'
+  c.option '-o', '--output_format <format>', String, 'Output format, could be YAML, JSON (default), CSV'
   c.option '-O', '--output <output file>', String, 'Output file, could be STDOUT'
   c.action do |args, options|
-    options.default input_format: :args, port: :auto, output_format: :yaml, output: :stdout
+    options.default input_format: :args, port: :auto, output_format: :json, output: :stdout
 
     recorder = Recorder.new
     
     case options.input_format.downcase.to_sym
-    when :args
+    when :args, :""
       recorder.commands args
     when :yaml
       safe_load_file args.first do |input_file|
@@ -41,7 +41,7 @@ command :record do |c|
       end
     when :json
       safe_load_file args.first do |input_file|
-        recorder.commands JSON.parse File.open(input_file, 'r')
+        recorder.commands JSON.load File.open(input_file, 'r')
       end
     when :csv
       safe_load_file args.first do |input_file|
@@ -104,6 +104,75 @@ command :record do |c|
         safe_generation file, &generate_output
       end
     end
+  end
+end
+
+command :verify do |c|
+  c.syntax = "irrecorder verify [options] record_file"
+  c.summary = 'Verify the keys recorded'
+  c.description = <<-END
+      Verify the keys recorded
+      A output file should be provided
+  END
+  # c.example 'Load from YAML', "irrecorder"
+  c.option '-i', '--input_format <format>', String, 'Input format, could be YAML, JSON (default), CSV (SUPPORT SOON)'
+  c.option '-p', '--port <port file>', String, 'Port of the sensor'  
+  c.action do |args, options|
+    options.default input_format: :json, port: :auto
+
+    verifier = Verifier.new
+    
+    case options.input_format.downcase.to_sym    
+    when :yaml
+      safe_load_file args.first do |input_file|
+        verifier.commands = YAML.load_file input_file
+      end
+    when :json
+      safe_load_file args.first do |input_file|        
+        verifier.commands = JSON.load File.open(input_file, 'r')
+      end
+    when :csv
+      safe_load_file args.first do |input_file|
+        # verifier.commands = File.read(input_file).split(',').map{|s| s.strip!}
+        abort "NOT YET SUPPORTED".light_red
+      end
+    else      
+      abort 'Invalid input format'.light_red
+    end
+
+    case options.port.downcase.to_sym
+    when :auto
+      port = detect_port
+
+      puts "Sensor detected at #{port.light_yellow}".light_white
+
+      verifier.port = port
+    else
+      ensure_port(options.port) do |port|
+        verifier.port = port
+      end
+    end
+
+    begin
+      puts 'Start Verify'.light_yellow
+
+      report = verifier.verify
+    rescue
+      abort 'Error occurs during verifying'.light_red
+    end
+      
+
+    puts '', 'Result: '.light_white
+      
+    report.each do |key, result|      
+      print key.to_s.light_yellow, ': '.light_white
+      if result
+        print 'Verified'.light_green
+      else
+        print 'Mismatch'.light_red
+      end
+      print "\r\n"
+    end    
   end
 end
 

@@ -1,4 +1,8 @@
 module IrSequence
+  def self.wrap(data)
+    data.symbolize_keys!.extend self
+  end
+
   def self.extended(obj)
     obj[:type] = obj[:type].to_sym rescue obj[:type]
   end
