@@ -176,6 +176,41 @@ command :verify do |c|
   end
 end
 
+command :reveal do |c|
+  c.syntax = "irrecorder reveal [options]"
+  c.summary = 'Display the ir command recieved'
+  c.description = <<-END
+      Reveal the ir command recieved      
+  END
+  # c.example 'Load from YAML', "irrecorder"  
+  c.option '-p', '--port <port file>', String, 'Port of the sensor'  
+  
+  c.action do |args, options|
+    options.default port: :auto
+
+    revealer = Revealer.new    
+        
+    case options.port.downcase.to_sym
+    when :auto
+      port = detect_port
+
+      puts "Sensor detected at #{port.light_yellow}".light_white
+
+      revealer.port = port
+    else
+      ensure_port(options.port) do |port|
+        revealer.port = port
+      end
+    end
+
+    # begin      
+      revealer.reveal
+    # rescue
+    #   abort 'Error occurs during revealing'.light_red
+    # end
+  end
+end
+
 module Helper
   def safe_load_file(file)    
     abort "File #{file} doesn't exists".light_red unless File.exists?(file)
